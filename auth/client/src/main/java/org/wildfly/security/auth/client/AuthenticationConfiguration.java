@@ -1339,6 +1339,8 @@ public final class AuthenticationConfiguration {
      * @return the new configuration
      */
     public AuthenticationConfiguration withCapturedAccessControlContext() {
+        if (System.getSecurityManager() == null)
+            return this;
         return new AuthenticationConfiguration(this, SET_ACCESS_CTXT, getContext());
     }
 
@@ -1423,7 +1425,8 @@ public final class AuthenticationConfiguration {
         }
         saslClientFactory = new LocalPrincipalSaslClientFactory(new FilterMechanismSaslClientFactory(saslClientFactory, filter));
         final SaslClientFactory finalSaslClientFactory = saslClientFactory;
-        saslClientFactory = doPrivileged((PrivilegedAction<PrivilegedSaslClientFactory>) () -> new PrivilegedSaslClientFactory(finalSaslClientFactory), capturedAccessContext);
+        saslClientFactory = System.getSecurityManager() == null? new PrivilegedSaslClientFactory(finalSaslClientFactory)
+        : doPrivileged((PrivilegedAction<PrivilegedSaslClientFactory>) () -> new PrivilegedSaslClientFactory(finalSaslClientFactory), capturedAccessContext);
 
         SaslClient saslClient = saslClientFactory.createSaslClient(serverMechanisms.toArray(NO_STRINGS),
                 authzName, uri.getScheme(), uri.getHost(), Collections.emptyMap(), createCallbackHandler());
